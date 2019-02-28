@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android">
+    <EditTextPreference android:title="Email address to notify"
+        android:key="email"
+        android:summary="Please provide your email"/>
+    <com.example.chocot1u.jpro.settings.TimePreference
+        android:title="Weekend starting hour"
+        android:key="we_start_hour"
+        android:defaultValue="19:00"/>
+    <com.example.chocot1u.jpro.settings.TimePreference
+        android:title="Weekend ending hour"
+        android:key="we_end_hour"
+        android:defaultValue="23:00"/>
+    <com.example.chocot1u.jpro.settings.TimePreference
+        android:title="Week starting hour"
+        android:key="w_start_hour"
+        android:defaultValue="23:00"/>
+    <com.example.chocot1u.jpro.settings.TimePreference
+        android:title="Week ending hour"
+        android:key="w_end_hour"
+        android:defaultValue="06:00"/>
+</PreferenceScreen>
