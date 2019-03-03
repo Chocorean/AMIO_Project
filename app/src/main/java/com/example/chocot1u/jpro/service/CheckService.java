@@ -11,10 +11,9 @@ import android.os.IBinder;
 import android.preference.PreferenceManager;
 import android.support.annotation.Nullable;
 import android.util.Log;
-import android.view.View;
 
+import com.example.chocot1u.jpro.MainActivity;
 import com.example.chocot1u.jpro.R;
-import com.example.chocot1u.jpro.SensorsActivity;
 import com.example.chocot1u.jpro.mail.GMailSender;
 
 import org.json.JSONArray;
@@ -42,7 +41,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 public class CheckService extends Service {
     private final String MOTES_URL = "http://iotlab.telecomnancy.eu/rest/info/motes";
-    private final String DATA_URL = "http://iotlab.telecomnancy.eu/rest/data/1/light1-light2/last";
+    public static final String DATA_URL = "http://iotlab.telecomnancy.eu/rest/data/1/light1-light2/last";
 
     private final static AtomicInteger c = new AtomicInteger(0);
     public static int getID() {
@@ -151,7 +150,7 @@ public class CheckService extends Service {
                             String msg = String.format("Mote [%s] has detected that light #%d was on at %s.", mote.getString("mac"), i+1, format.format(new Date(timestamp)));
                             if (isWeekNotificationTime) {
                                 // preparing intent
-                                Intent notificationIntent = new Intent(instance, SensorsActivity.class);
+                                Intent notificationIntent = new Intent(instance, MainActivity.class);
                                 PendingIntent contentIntent = PendingIntent.getActivity(instance, 0, notificationIntent, 0);
 
                                 // send a notification
@@ -182,7 +181,7 @@ public class CheckService extends Service {
         };
     }
 
-    private String askURL(String url) {
+    public static String askURL(String url) {
         try {
             Log.d("CheckService", String.format("[TimerTask] GET %s", url));
             HttpURLConnection conn = (HttpURLConnection) new URL(url).openConnection();
