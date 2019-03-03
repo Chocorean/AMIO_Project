@@ -1,5 +1,8 @@
 package com.example.chocot1u.jpro.service;
 
+import android.app.Notification;
+import android.app.NotificationManager;
+import android.app.PendingIntent;
 import android.app.Service;
 import android.content.Intent;
 import android.content.SharedPreferences;
@@ -8,6 +11,11 @@ import android.os.IBinder;
 import android.preference.PreferenceManager;
 import android.support.annotation.Nullable;
 import android.util.Log;
+import android.view.View;
+
+import com.example.chocot1u.jpro.R;
+import com.example.chocot1u.jpro.SensorsActivity;
+import com.example.chocot1u.jpro.mail.GMailSender;
 
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -23,9 +31,11 @@ import java.net.MalformedURLException;
 import java.net.ProtocolException;
 import java.net.URL;
 import java.text.DateFormat;
+import java.text.Format;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.Timer;
 import java.util.TimerTask;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -68,7 +78,7 @@ public class CheckService extends Service {
 
     @Override
     public void onCreate() {
-        timer.scheduleAtFixedRate(timerTask,0,  10000);
+        timer.scheduleAtFixedRate(timerTask,0,  60000);
     }
 
     @Override
@@ -76,6 +86,24 @@ public class CheckService extends Service {
         Log.d("CheckService", "Stopping CheckService");
         timer.cancel();
         this.stopSelf();
+    }
+
+    private void sendMessage(String dest, String msg) {
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+                try {
+                    Log.d("SendMail", "run");
+                    GMailSender sender = new GMailSender("projetamion2019@gmail.com",
+                            "projetamio2019BR");
+                    sender.sendMail("Sensor alert", "msg",
+                            "projetamion2019@gmail.com", "dest");
+                    Log.d("SendMail", "Succeded");
+                } catch (Exception e) {
+                    Log.e("SendMail", e.getMessage(), e);
+                }
+            }
+        }).start();
     }
 
     public CheckService() {
@@ -118,49 +146,35 @@ public class CheckService extends Service {
                                 }
                             }
                             assert mote != null; // might never happen
-                            // now send notification of mal
+                            // now send notification or mail
+                            Format format = new SimpleDateFormat("HH:mm:ss [MM:dd:yyy]");
+                            String msg = String.format("Mote [%s] has detected that light #%d was on at %s.", mote.getString("mac"), i+1, format.format(new Date(timestamp)));
                             if (isWeekNotificationTime) {
-                                // notification
-                                // TODO
+                                // preparing intent
+                                Intent notificationIntent = new Intent(instance, SensorsActivity.class);
+                                PendingIntent contentIntent = PendingIntent.getActivity(instance, 0, notificationIntent, 0);
+
+                                // send a notification
+                                Notification notification  = new Notification.Builder(instance)
+                                        .setContentTitle("A light is on !")
+                                        .setContentText(msg)
+                                        .setSmallIcon(R.drawable.ic_stat_light)
+                                        .setAutoCancel(true)
+                                        .setPriority(Notification.PRIORITY_HIGH)
+                                        .setContentIntent(contentIntent)
+                                        .setVisibility(Notification.VISIBILITY_PUBLIC).build();
+                                NotificationManager notificationManager =
+                                        (NotificationManager) getSystemService(NOTIFICATION_SERVICE);
+                                notificationManager.notify(getID(), notification);
+                                Log.d("CheckService", "Sent notification.");
                             }
                             if (isWeekEndNotificationTime) {
-                                // mail
-                                // TODO
+                                SharedPreferences sp = PreferenceManager.getDefaultSharedPreferences(instance);
+                                sendMessage(sp.getString("email", "raphael.ohanian@telecomnancy.net"), msg);
+                                Log.d("CheckService", "Sent mail.");
                             }
                         }
                     }
-
-                    /*
-                        if (w) {
-                            // preparing intent
-                            Intent notificationIntent = new Intent(instance, SensorsActivity.class);
-                            PendingIntent contentIntent = PendingIntent.getActivity(instance, 0, notificationIntent, 0);
-
-                            // send a notification
-                            Notification notification  = new Notification.Builder(instance)
-                                    .setContentTitle("A light is on !")
-                                    .setContentText(msg)
-                                    .setSmallIcon(R.drawable.ic_stat_light)
-                                    .setAutoCancel(true)
-                                    .setPriority(Notification.PRIORITY_HIGH)
-                                    .setContentIntent(contentIntent)
-                                    .setVisibility(Notification.VISIBILITY_PUBLIC).build();
-                            NotificationManager notificationManager =
-                                    (NotificationManager) getSystemService(NOTIFICATION_SERVICE);
-                            notificationManager.notify(getID(), notification);
-                            Log.d("CheckService", "Sent notification.");
-                        }
-                        if (!we) {
-                            Intent mailIntent = new Intent();
-                            mailIntent.setAction(Intent.ACTION_SEND);
-                            mailIntent.setData(Uri.parse("mailto:"));
-                            mailIntent.putExtra(Intent.EXTRA_TEXT, msg);
-                            mailIntent.putExtra(Intent.EXTRA_EMAIL, new String[] {String.format("Supervisor<%s>", PreferenceManager.getDefaultSharedPreferences(instance).getString("email", "baptiste.chocot@gmail.com"))});
-                            mailIntent.setType("text/plain");
-                            startActivity(Intent.createChooser(mailIntent, "Alert supervisor"));
-                            Log.d("CheckService", "Sent mail.");
-                        }
-                    }*/
                 } catch (JSONException e) {
                     Log.d("CheckService", "Response is not JSON formatted.");
                 }
